@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Screen Recorder</title>
+</head>
+<body>
+  <h1>Screen Recorder</h1>
+
+  <button id="startBtn" onclick="startRecording()">Start Record</button>
+  <button id="stopBtn" onclick="stopRecording()" disabled>Stop Record</button>
+
+  <div>
+    <video id="videoElement" autoplay></video>
+  </div>
+
+  <input type="text" style="width:500px;height:200px;font-weight: bold; font-size: 30px;" name="">
+
+  <script>
+    let screenStream; // stream untuk merekam layar
+    let webcamStream; // stream untuk merekam webcam
+    let screenRecorder; // objek untuk merekam layar
+    let webcamRecorder; // objek untuk merekam webcam
+
+    function startRecording() {
+      navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+        .then(function (stream) {
+          screenStream = stream;
+          return navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        })
+        .then(function (stream) {
+          webcamStream = stream;
+
+          // Merekam layar
+          const screenChunks = [];
+          screenRecorder = new MediaRecorder(screenStream);
+          screenRecorder.ondataavailable = function (event) {
+            screenChunks.push(event.data);
+          };
+          screenRecorder.onstop = function () {
+            const screenBlob = new Blob(screenChunks, { type: 'video/webm' });
+            const screenUrl = URL.createObjectURL(screenBlob);
+            const screenA = document.createElement('a');
+            document.body.appendChild(screenA);
+            screenA.style = 'display: none';
+            screenA.href = screenUrl;
+            screenA.download = 'layar.webm';
+            screenA.click();
+            window.URL.revokeObjectURL(screenUrl);
+          };
+          screenRecorder.start();
+
+          // Merekam webcam
+          const webcamChunks = [];
+          webcamRecorder = new MediaRecorder(webcamStream);
+          webcamRecorder.ondataavailable = function (event) {
+            webcamChunks.push(event.data);
+          };
+          webcamRecorder.onstop = function () {
+            const webcamBlob = new Blob(webcamChunks, { type: 'video/webm' });
+            const webcamUrl = URL.createObjectURL(webcamBlob);
+            const webcamA = document.createElement('a');
+            document.body.appendChild(webcamA);
+            webcamA.style = 'display: none';
+            webcamA.href = webcamUrl;
+            webcamA.download = 'face.webm';
+            webcamA.click();
+            window.URL.revokeObjectURL(webcamUrl);
+          };
+          webcamRecorder.start();
+
+          // Menampilkan webcam di elemen video
+          const videoElement = document.getElementById('videoElement');
+          videoElement.srcObject = webcamStream;
+
+          document.getElementById('startBtn').disabled = true;
+          document.getElementById('stopBtn').disabled = false;
+        })
+        .catch(function (error) {
+          console.error('Error accessing media devices.', error);
+        });
+    }
+
+    function stopRecording() {
+      screenRecorder.stop();
+      webcamRecorder.stop();
+      screenStream.getTracks().forEach(function (track) {
+        track.stop();
+      });
+      webcamStream.getTracks().forEach(function (track) {
+        track.stop();
+      });
+
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = true;
+    }
+  </script>
+</body>
+</html>
